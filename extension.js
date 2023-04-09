@@ -1,54 +1,97 @@
-const { spawn, exec } = require('child_process');
+const { spawn } = require('child_process');
 const vscode = require('vscode');
 const kill = require('tree-kill');
 
-var child = null;
-var outputChannel = null;
+let child = null;
+let outputChannel = null;
+let regex = null;
 
 function activate(context) {
 	console.debug('Congratulations, your extension "logcatcode" is now active!');
-	let startCommand = vscode.commands.registerCommand('logcatcode.start', onStart);
-	let stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
+
+	const startCommand = vscode.commands.registerCommand('logcatcode.start', onStart);
+	const stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
 	context.subscriptions.push(startCommand, stopCommand);
 }
 
-function onStart() {
-	if (child != null) {
-		onStop();
-	}
+function startLogcatProcess() {
 	child = spawn(`adb logcat -c && adb logcat`, {
 		stdio: 'pipe',
 		shell: true,
 		cwd: process.cwd(),
 	});
 	console.debug('start pid:' + child.pid);
+
 	child.stdout.setEncoding('utf8');
-	if (outputChannel == null) {
+
+	if (!outputChannel) {
 		outputChannel = vscode.window.createOutputChannel("logcat", "log");
 	}
+
 	child.stdout.on('data', (data) => {
-		outputChannel.append(data);
+		data.split(/\r?\n/).forEach((line) => {
+			if (filterStringByRegex(line, regex)) {
+				outputChannel.append(line + "\n");
+			}
+		});
 	});
+
 	child.stderr.setEncoding('utf8');
+
 	child.stderr.on('data', (data) => {
-		outputChannel.append('[logcatcode]error:' + data);
+		outputChannel.append(`[logcatcode]error: ${data}`);
 	});
 
 	child.on('close', (code, signal) => {
-		console.debug(
-			`child process terminated due to receipt of signal ${signal}`);
+		console.debug(`child process terminated due to receipt of signal ${signal}`);
 	});
+}
+
+async function onStart() {
+	if (child == null) {
+		startLogcatProcess();
+	}
+
+	regex = await vscode.window.showInputBox({
+		prompt: '请输入一个过滤 logcat 的正则表达式',
+		validateInput: function (value) {
+			try {
+				new RegExp(value);
+				return null;
+			} catch (error) {
+				return error.message;
+			}
+		}
+	});
+
+	if (!regex) {
+		console.log('User input is undefined');
+		return;
+	}
+
+	console.log('User input regex: ' + regex);
+
 	outputChannel.show();
 }
 
+function filterStringByRegex(inputString, regex) {
+	if (!regex) {
+		return inputString;
+	}
+
+	const match = inputString.match(new RegExp(regex));
+	return match ? inputString : '';
+}
+
 function onStop() {
-	if (child != null) {
-		console.debug("kill pid:" + child.pid);
+	if (child !== null) {
+		console.debug(`kill pid: ${child.pid}`);
 		kill(child.pid);
 		child = null;
 		outputChannel.hide();
 		outputChannel.dispose();
-		outputChannel = null
+		outputChannel = null;
+		regex = null;
 	}
 }
 
@@ -60,4 +103,4 @@ function deactivate() {
 module.exports = {
 	activate,
 	deactivate
-}
+};
