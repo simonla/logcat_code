@@ -12,7 +12,22 @@ function activate(context) {
 	const startCommand = vscode.commands.registerCommand('logcatcode.start', onStart);
 	const stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
 	const showCommand = vscode.commands.registerCommand('logcatcode.show', onShow);
-	context.subscriptions.push(startCommand, stopCommand, showCommand);
+	const filterCommand = vscode.commands.registerCommand('logcatcode.filter', onFilter);
+	context.subscriptions.push(startCommand, stopCommand, showCommand, filterCommand);
+}
+
+async function onFilter() {
+	if (regex == null) {
+		onStart();
+		return;
+	}
+	let reg = await getRegex();
+	if (reg) {
+		regex = reg;
+	}
+	if (outputChannel != null) {
+		outputChannel.show();
+	}
 }
 
 function onShow() {
@@ -54,9 +69,8 @@ function startLogcatProcess() {
 	});
 }
 
-async function onStart() {
-
-	regex = await vscode.window.showInputBox({
+async function getRegex() {
+	return await vscode.window.showInputBox({
 		prompt: '请输入一个过滤 logcat 的正则表达式',
 		validateInput: function (value) {
 			try {
@@ -67,17 +81,23 @@ async function onStart() {
 			}
 		}
 	});
+}
 
-	if (!regex) {
+async function onStart() {
+
+	let reg = await getRegex();
+
+	if (!reg) {
 		console.log('User input is undefined');
 		return;
 	}
+	regex = reg;
 
 	if (child == null) {
 		startLogcatProcess();
 	}
 	console.log('User input regex: ' + regex);
-
+	outputChannel.clear();
 	outputChannel.show();
 }
 

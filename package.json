@@ -28,6 +28,10 @@
       {
         "command": "logcatcode.show",
         "title": "LogcatCode:Show"
+      },
+      {
+        "command": "logcatcode.filter",
+        "title": "LogcatCode:Filter"
       }
     ]
   },
