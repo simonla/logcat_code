@@ -24,6 +24,10 @@
       {
         "command": "logcatcode.stop",
         "title": "LogcatCode:Stop"
+      },
+      {
+        "command": "logcatcode.show",
+        "title": "LogcatCode:Show"
       }
     ]
   },

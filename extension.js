@@ -11,7 +11,14 @@ function activate(context) {
 
 	const startCommand = vscode.commands.registerCommand('logcatcode.start', onStart);
 	const stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
-	context.subscriptions.push(startCommand, stopCommand);
+	const showCommand = vscode.commands.registerCommand('logcatcode.show', onShow);
+	context.subscriptions.push(startCommand, stopCommand, showCommand);
+}
+
+function onShow() {
+	if (outputChannel) {
+		outputChannel.show();
+	}
 }
 
 function startLogcatProcess() {
@@ -48,9 +55,6 @@ function startLogcatProcess() {
 }
 
 async function onStart() {
-	if (child == null) {
-		startLogcatProcess();
-	}
 
 	regex = await vscode.window.showInputBox({
 		prompt: '请输入一个过滤 logcat 的正则表达式',
@@ -69,6 +73,9 @@ async function onStart() {
 		return;
 	}
 
+	if (child == null) {
+		startLogcatProcess();
+	}
 	console.log('User input regex: ' + regex);
 
 	outputChannel.show();
