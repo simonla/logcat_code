@@ -71,7 +71,9 @@ function startLogcatProcess() {
 
 async function getRegex() {
 	return await vscode.window.showInputBox({
+		ignoreFocusOut: true,
 		prompt: '请输入一个过滤 logcat 的正则表达式',
+		value: regex,
 		validateInput: function (value) {
 			try {
 				new RegExp(value);
@@ -106,7 +108,7 @@ function filterStringByRegex(inputString, regex) {
 		return inputString;
 	}
 
-	const match = inputString.match(new RegExp(regex));
+	const match = inputString.match(regex);
 	return match ? inputString : '';
 }
 
