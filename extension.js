@@ -5,9 +5,11 @@ const kill = require('tree-kill');
 let child = null;
 let outputChannel = null;
 let regex = null;
+let statusBar = null;
+
+var isKilling = false;
 
 function activate(context) {
-	console.debug('Congratulations, your extension "logcatcode" is now active!');
 
 	const startCommand = vscode.commands.registerCommand('logcatcode.start', onStart);
 	const stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
@@ -48,7 +50,6 @@ function startLogcatProcess() {
 		shell: true,
 		cwd: process.cwd(),
 	});
-	console.debug('start pid:' + child.pid);
 
 	child.stdout.setEncoding('utf8');
 
@@ -71,7 +72,14 @@ function startLogcatProcess() {
 	});
 
 	child.on('close', (code, signal) => {
-		console.debug(`child process terminated due to receipt of signal ${signal}`);
+		if (!isKilling) {
+			vscode.window.showInformationMessage(`adb process terminated due to signal ${signal} code ${code}`);
+		}
+		isKilling = false;
+		if (outputChannel != null) {
+			outputChannel.append(`[logcatcode]child process terminated due to receipt of signal ${signal}`);
+			onStop()
+		}
 	});
 }
 
@@ -96,7 +104,6 @@ async function onStart() {
 	if (regex == null) {
 		let reg = await getRegex();
 		if (!reg) {
-			console.log('User input is undefined');
 			return;
 		}
 		regex = reg;
@@ -106,9 +113,12 @@ async function onStart() {
 	if (child == null) {
 		startLogcatProcess();
 	}
-	console.log('User input regex: ' + regex);
 	outputChannel.clear();
 	outputChannel.show();
+	statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 900);
+	statusBar.text = `logging`;
+	statusBar.tooltip = regex;
+	statusBar.show();
 }
 
 function filterStringByRegex(inputString, regex) {
@@ -122,17 +132,21 @@ function filterStringByRegex(inputString, regex) {
 
 function onStop() {
 	if (child !== null) {
-		console.debug(`kill pid: ${child.pid}`);
+		isKilling = true;
 		kill(child.pid);
 		child = null;
 		outputChannel.hide();
 		outputChannel.dispose();
 		outputChannel = null;
 	}
+	if (statusBar !== null) {
+		statusBar.hide();
+		statusBar.dispose();
+		statusBar = null;
+	}
 }
 
 function deactivate() {
-	console.debug("deactivate");
 	onStop();
 }
 
