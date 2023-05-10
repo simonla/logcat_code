@@ -32,6 +32,10 @@
       {
         "command": "logcatcode.filter",
         "title": "LogcatCode:Filter"
+      },
+      {
+        "command": "logcatcode.restart",
+        "title": "LogcatCode:Restart"
       }
     ]
   },

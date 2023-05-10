@@ -13,7 +13,13 @@ function activate(context) {
 	const stopCommand = vscode.commands.registerCommand('logcatcode.stop', onStop);
 	const showCommand = vscode.commands.registerCommand('logcatcode.show', onShow);
 	const filterCommand = vscode.commands.registerCommand('logcatcode.filter', onFilter);
-	context.subscriptions.push(startCommand, stopCommand, showCommand, filterCommand);
+	const restartCommand = vscode.commands.registerCommand('logcatcode.restart', onRestart);
+	context.subscriptions.push(startCommand, stopCommand, showCommand, filterCommand, restartCommand);
+}
+
+function onRestart() {
+	onStop();
+	onStart();
 }
 
 async function onFilter() {
@@ -87,13 +93,15 @@ async function getRegex() {
 
 async function onStart() {
 
-	let reg = await getRegex();
-
-	if (!reg) {
-		console.log('User input is undefined');
-		return;
+	if (regex == null) {
+		let reg = await getRegex();
+		if (!reg) {
+			console.log('User input is undefined');
+			return;
+		}
+		regex = reg;
 	}
-	regex = reg;
+
 
 	if (child == null) {
 		startLogcatProcess();
@@ -120,7 +128,6 @@ function onStop() {
 		outputChannel.hide();
 		outputChannel.dispose();
 		outputChannel = null;
-		regex = null;
 	}
 }
 
