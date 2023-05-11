@@ -60,6 +60,17 @@ function startLogcatProcess() {
 	child.stdout.on('data', (data) => {
 		data.split(/\r?\n/).forEach((line) => {
 			if (filterStringByRegex(line, regex)) {
+				if (line.match("^.*\\bD\\b.*$")) {
+					line = line.replace(" D ", " Debug ");
+				}
+				else if (line.match("^.*\\bI\\b.*$")) {
+					line = line.replace(" I ", " Info ");
+				} else if (line.match("^.*\\bW\\b.*$")) {
+					line = line.replace(" W ", " Warn ");
+				}
+				else if (line.match("^.*\\bE\\b.*$")) {
+					line = line.replace(" E ", " Error ");
+				}
 				outputChannel.append(line + "\n");
 			}
 		});
@@ -100,7 +111,6 @@ async function getRegex() {
 }
 
 async function onStart() {
-
 	if (regex == null) {
 		let reg = await getRegex();
 		if (!reg) {
@@ -111,6 +121,7 @@ async function onStart() {
 
 
 	if (child == null) {
+		isKilling = false
 		startLogcatProcess();
 	}
 	outputChannel.clear();
